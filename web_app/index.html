@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Diario</title>
+  <meta name="theme-color" content="#4f46e5">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.json">
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-dark: #4338ca;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding-bottom: 80px; }
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 16px;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    header h1 { font-size: 20px; }
+    .search-box {
+      margin: 12px 16px;
+      display: flex;
+      background: var(--card-bg);
+      border-radius: 25px;
+      padding: 8px 16px;
+      border: 1px solid var(--border);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .search-box input {
+      border: none;
+      outline: none;
+      width: 100%;
+      font-size: 15px;
+      background: transparent;
+    }
+    .container { padding: 0 16px; }
+    .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      border: 1px solid var(--border);
+    }
+    .card-title { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+    .card-date { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
+    .card-body { font-size: 14px; line-height: 1.4; color: #334155; margin-bottom: 10px; white-space: pre-wrap; }
+    .contacts-badge { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+    .badge {
+      background: #eef2ff;
+      color: var(--primary);
+      padding: 4px 10px;
+      border-radius: 16px;
+      font-size: 12px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .media-preview { display: flex; gap: 8px; overflow-x: auto; margin: 8px 0; }
+    .media-preview img, .media-preview video {
+      width: 70px;
+      height: 70px;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+    .card-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      border-top: 1px solid #f1f5f9;
+      padding-top: 8px;
+    }
+    .btn-icon {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-size: 18px;
+      padding: 6px;
+    }
+    .fab {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--primary);
+      color: white;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: none;
+      font-size: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+      cursor: pointer;
+    }
+    /* Modal editor */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: white;
+      z-index: 200;
+      overflow-y: auto;
+      padding: 16px;
+    }
+    .modal.active { display: block; }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .modal-header button {
+      background: none;
+      border: none;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--primary);
+    }
+    .input-field {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 15px;
+      outline: none;
+    }
+    .toolbar-tools {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .tool-btn {
+      background: #f1f5f9;
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .tool-btn:active { background: #e2e8f0; }
+    textarea.input-field { min-height: 160px; resize: vertical; }
+    .file-buttons {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .file-btn-label {
+      background: #eef2ff;
+      color: var(--primary);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .file-input { display: none; }
+    .empty-state {
+      text-align: center;
+      color: var(--text-muted);
+      margin-top: 60px;
+      padding: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>📖 Diario</h1>
+  </header>
+
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Cerca appunti..." oninput="renderNotes()">
+  </div>
+
+  <div class="container" id="notesList"></div>
+
+  <button class="fab" onclick="openEditor()">+</button>
+
+  <!-- Modal Editor -->
+  <div class="modal" id="noteModal">
+    <div class="modal-header">
+      <button onclick="closeEditor()" style="color: #64748b;">Annulla</button>
+      <h3 id="modalTitle">Nuovo Appunto</h3>
+      <button onclick="saveCurrentNote()">Salva</button>
+    </div>
+
+    <input type="hidden" id="noteId">
+    <input type="text" id="noteTitle" class="input-field" placeholder="Titolo appunti...">
+
+    <!-- Barra selezione / copia / incolla / cancella -->
+    <div class="toolbar-tools">
+      <button type="button" class="tool-btn" onclick="copyNoteText()">📋 Copia</button>
+      <button type="button" class="tool-btn" onclick="pasteNoteText()">📥 Incolla</button>
+      <button type="button" class="tool-btn" onclick="selectAllText()">🔍 Seleziona tutto</button>
+      <button type="button" class="tool-btn" onclick="clearText()" style="color: var(--danger);">🗑️ Cancella</button>
+      <button type="button" class="tool-btn" onclick="shareNoteCurrent()">📤 Condividi</button>
+    </div>
+
+    <!-- Dati personali / contatti -->
+    <input type="text" id="noteAddress" class="input-field" placeholder="📍 Indirizzo...">
+    <input type="tel" id="notePhone" class="input-field" placeholder="📞 Telefono...">
+    <input type="email" id="noteEmail" class="input-field" placeholder="✉️ Email...">
+
+    <!-- Testo principale -->
+    <textarea id="noteContent" class="input-field" placeholder="Scrivi qui i tuoi appunti..."></textarea>
+
+    <!-- Foto e Video -->
+    <div class="file-buttons">
+      <label class="file-btn-label">
+        📷 Scatta o Scegli Foto
+        <input type="file" class="file-input" accept="image/*" multiple onchange="handleFiles(this.files, 'image')">
+      </label>
+      <label class="file-btn-label">
+        🎥 Registra o Scegli Video
+        <input type="file" class="file-input" accept="video/*" multiple onchange="handleFiles(this.files, 'video')">
+      </label>
+    </div>
+
+    <div id="mediaContainer" class="media-preview"></div>
+  </div>
+
+  <script>
+    let notes = JSON.parse(localStorage.getItem('diario_notes') || '[]');
+    let currentMedia = [];
+
+    function renderNotes() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const list = document.getElementById('notesList');
+      list.innerHTML = '';
+
+      const filtered = notes.filter(n => 
+        (n.title && n.title.toLowerCase().includes(search)) ||
+        (n.content && n.content.toLowerCase().includes(search)) ||
+        (n.address && n.address.toLowerCase().includes(search)) ||
+        (n.phone && n.phone.includes(search)) ||
+        (n.email && n.email.toLowerCase().includes(search))
+      );
+
+      if (filtered.length === 0) {
+        list.innerHTML = `
+          <div class="empty-state">
+            <p style="font-size: 48px; margin-bottom: 8px;">📝</p>
+            <p>Nessun appunto nel Diario.</p>
+            <p style="font-size: 13px; margin-top: 4px;">Premi il tasto <b>+</b> in basso per iniziare!</p>
+          </div>
+        `;
+        return;
+      }
+
+      filtered.forEach(note => {
+        const card = document.createElement('div');
+        card.className = 'card';
+
+        let contacts = '';
+        if (note.address) contacts += `<span class="badge">📍 ${note.address}</span>`;
+        if (note.phone) contacts += `<a href="tel:${note.phone}" class="badge">📞 ${note.phone}</a>`;
+        if (note.email) contacts += `<a href="mailto:${note.email}" class="badge">✉️ ${note.email}</a>`;
+
+        let mediaHtml = '';
+        if (note.media && note.media.length > 0) {
+          mediaHtml = '<div class="media-preview">';
+          note.media.forEach(m => {
+            if (m.type === 'image') {
+              mediaHtml += `<img src="${m.data}" alt="Foto allegata">`;
+            } else if (m.type === 'video') {
+              mediaHtml += `<video src="${m.data}" controls></video>`;
+            }
+          });
+          mediaHtml += '</div>';
+        }
+
+        card.innerHTML = `
+          <div onclick="editNote('${note.id}')" style="cursor: pointer;">
+            <div class="card-title">${note.title || 'Senza titolo'}</div>
+            <div class="card-date">${note.date}</div>
+            <div class="card-body">${note.content || ''}</div>
+            <div class="contacts-badge">${contacts}</div>
+            ${mediaHtml}
+          </div>
+          <div class="card-actions">
+            <button class="btn-icon" title="Condividi" onclick="shareNoteById('${note.id}')">📤</button>
+            <button class="btn-icon" title="Elimina" style="color: var(--danger);" onclick="deleteNote('${note.id}')">🗑️</button>
+          </div>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    function openEditor(note = null) {
+      document.getElementById('noteModal').classList.add('active');
+      if (note) {
+        document.getElementById('modalTitle').innerText = 'Modifica Appunto';
+        document.getElementById('noteId').value = note.id;
+        document.getElementById('noteTitle').value = note.title || '';
+        document.getElementById('noteContent').value = note.content || '';
+        document.getElementById('noteAddress').value = note.address || '';
+        document.getElementById('notePhone').value = note.phone || '';
+        document.getElementById('noteEmail').value = note.email || '';
+        currentMedia = note.media ? [...note.media] : [];
+      } else {
+        document.getElementById('modalTitle').innerText = 'Nuovo Appunto';
+        document.getElementById('noteId').value = '';
+        document.getElementById('noteTitle').value = '';
+        document.getElementById('noteContent').value = '';
+        document.getElementById('noteAddress').value = '';
+        document.getElementById('notePhone').value = '';
+        document.getElementById('noteEmail').value = '';
+        currentMedia = [];
+      }
+      renderMediaPreview();
+    }
+
+    function closeEditor() {
+      document.getElementById('noteModal').classList.remove('active');
+    }
+
+    function handleFiles(files, type) {
+      Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          currentMedia.push({ type, data: e.target.result });
+          renderMediaPreview();
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function renderMediaPreview() {
+      const cont = document.getElementById('mediaContainer');
+      cont.innerHTML = '';
+      currentMedia.forEach((m, idx) => {
+        const wrap = document.createElement('div');
+        wrap.style.position = 'relative';
+        wrap.style.display = 'inline-block';
+
+        let el;
+        if (m.type === 'image') {
+          el = document.createElement('img');
+          el.src = m.data;
+        } else {
+          el = document.createElement('video');
+          el.src = m.data;
+        }
+
+        const del = document.createElement('button');
+        del.innerText = '×';
+        del.style.position = 'absolute';
+        del.style.top = '2px';
+        del.style.right = '2px';
+        del.style.background = 'rgba(0,0,0,0.6)';
+        del.style.color = 'white';
+        del.style.border = 'none';
+        del.style.borderRadius = '50%';
+        del.style.width = '20px';
+        del.style.height = '20px';
+        del.style.cursor = 'pointer';
+        del.onclick = () => {
+          currentMedia.splice(idx, 1);
+          renderMediaPreview();
+        };
+
+        wrap.appendChild(el);
+        wrap.appendChild(del);
+        cont.appendChild(wrap);
+      });
+    }
+
+    function saveCurrentNote() {
+      const title = document.getElementById('noteTitle').value.trim();
+      const content = document.getElementById('noteContent').value.trim();
+      const address = document.getElementById('noteAddress').value.trim();
+      const phone = document.getElementById('notePhone').value.trim();
+      const email = document.getElementById('noteEmail').value.trim();
+      const id = document.getElementById('noteId').value || Date.now().toString();
+
+      if (!title && !content && currentMedia.length === 0) {
+        alert('Inserisci almeno del testo o una foto/video');
+        return;
+      }
+
+      const noteObj = {
+        id,
+        title: title || 'Senza titolo',
+        content,
+        address,
+        phone,
+        email,
+        media: currentMedia,
+        date: new Date().toLocaleDateString('it-IT') + ' ' + new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
+      };
+
+      const existingIndex = notes.findIndex(n => n.id === id);
+      if (existingIndex >= 0) {
+        notes[existingIndex] = noteObj;
+      } else {
+        notes.unshift(noteObj);
+      }
+
+      localStorage.setItem('diario_notes', JSON.stringify(notes));
+      closeEditor();
+      renderNotes();
+    }
+
+    function deleteNote(id) {
+      if (confirm('Vuoi davvero eliminare questo appunto?')) {
+        notes = notes.filter(n => n.id !== id);
+        localStorage.setItem('diario_notes', JSON.stringify(notes));
+        renderNotes();
+      }
+    }
+
+    function editNote(id) {
+      const note = notes.find(n => n.id === id);
+      if (note) openEditor(note);
+    }
+
+    // Copia, incolla, selezione, cancellazione
+    async function copyNoteText() {
+      const textarea = document.getElementById('noteContent');
+      if (textarea.value) {
+        await navigator.clipboard.writeText(textarea.value);
+        alert('Testo copiato!');
+      }
+    }
+
+    async function pasteNoteText() {
+      try {
+        const text = await navigator.clipboard.readText();
+        const textarea = document.getElementById('noteContent');
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        textarea.value = textarea.value.substring(0, start) + text + textarea.value.substring(end);
+      } catch (e) {
+        alert('Usa il menu incolla del tuo telefono/tastiera');
+      }
+    }
+
+    function selectAllText() {
+      const textarea = document.getElementById('noteContent');
+      textarea.focus();
+      textarea.select();
+    }
+
+    function clearText() {
+      if (confirm('Cancellare il testo?')) {
+        document.getElementById('noteContent').value = '';
+      }
+    }
+
+    function formatShareText(title, content, address, phone, email) {
+      let t = '';
+      if (title) t += `=== ${title} ===\n`;
+      if (content) t += `${content}\n\n`;
+      if (address) t += `Indirizzo: ${address}\n`;
+      if (phone) t += `Telefono: ${phone}\n`;
+      if (email) t += `Email: ${email}\n`;
+      return t;
+    }
+
+    function shareNoteById(id) {
+      const n = notes.find(x => x.id === id);
+      if (!n) return;
+      const shareData = {
+        title: n.title,
+        text: formatShareText(n.title, n.content, n.address, n.phone, n.email)
+      };
+      if (navigator.share) {
+        navigator.share(shareData).catch(() => {});
+      } else {
+        navigator.clipboard.writeText(shareData.text);
+        alert('Condivisione non supportata nel browser. Testo copiato negli appunti!');
+      }
+    }
+
+    function shareNoteCurrent() {
+      const title = document.getElementById('noteTitle').value;
+      const content = document.getElementById('noteContent').value;
+      const address = document.getElementById('noteAddress').value;
+      const phone = document.getElementById('notePhone').value;
+      const email = document.getElementById('noteEmail').value;
+      const text = formatShareText(title, content, address, phone, email);
+
+      if (navigator.share) {
+        navigator.share({ title: title || 'Diario', text }).catch(() => {});
+      } else {
+        navigator.clipboard.writeText(text);
+        alert('Testo copiato negli appunti per la condivisione!');
+      }
+    }
+
+    // Inizializza
+    renderNotes();
+  </script>
+</body>
+</html>
